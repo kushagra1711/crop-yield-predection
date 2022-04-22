@@ -1,3 +1,5 @@
+from sklearn.preprocessing import LabelEncoder
+from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
@@ -23,6 +25,8 @@ from sklearn.tree import DecisionTreeRegressor
 
 
 st.header("""CROP YIELD PREDICTION""");
+
+st.markdown("[Jump To Results](#prediction-on-custom-inputs)",unsafe_allow_html=True)
 
 #get the data
 df_yield = pd.read_csv('yield.csv') 
@@ -97,7 +101,7 @@ avg_temp=  pd.read_csv('temp.csv')
 avg_temp = avg_temp.rename(index=str, columns={"year": "Year", "country":'Area'})
 
 #set a header
-st.subheader("Avg. Rainfall Information:")
+st.subheader("Temperature Information:")
 
 #show the data
 st.dataframe(avg_temp)
@@ -116,6 +120,7 @@ yield_df.groupby('Item').count()
 yield_df['Area'].nunique()
 yield_df.groupby(['Area'],sort=True)['hg/ha_yield'].sum().nlargest(10)
 yield_df.groupby(['Item','Area'],sort=True)['hg/ha_yield'].sum().nlargest(10)
+yield_df.to_csv()
 
 st.header("The final Dataframe")
 
@@ -160,15 +165,19 @@ This means that categorical data must be converted to a numerical form. One hot 
 
 The categorical value represents the numerical value of the entry in the dataset. This encoding will create a binary column for each category and returns a matrix with the results.''')
 
-
-yield_df_onehot = pd.get_dummies( yield_df, columns=['Area', "Item"], prefix=['Country', "Item"])
-features = yield_df_onehot.loc[:, yield_df_onehot.columns != 'hg/ha_yield']
-label = yield_df['hg/ha_yield']
+features = yield_df.loc[:, yield_df.columns != 'hg/ha_yield']
 features = features.drop(['Year'], axis=1)
+label = yield_df['hg/ha_yield']
+ct1 = ColumnTransformer(transformers=[('encoder', OneHotEncoder(), [1])], remainder='passthrough')
+features = np.array(ct1.fit_transform(features))
+le = LabelEncoder()
+features[:,10] = le.fit_transform(features[:,10])
+yield_df_onehot = pd.DataFrame(features)
+yield_df_onehot["hg/ha_yield"] = label
 
 st.subheader("One-Hot Encoded data:")
-st.dataframe(features.head())
-st.write(features.info())
+st.dataframe(yield_df_onehot.head())
+st.write(yield_df_onehot.info())
 
 
 #scaling the data
@@ -201,11 +210,10 @@ train_data, test_data, train_labels, test_labels = train_test_split(features, la
 #Model comparing, training and selection
 st.header("Model Comparison and Selection")
 
-st.write("""Here we test 4 different regressor algorithms namely: 
+st.write("""Here we test 3 different regressor algorithms namely: 
 1. Gradient Boosting Regressor 
 2. Random Forest Regressor
 3. Decision Tree Regressor
-4. Support Vector Regressor
 """)
 
 
@@ -220,7 +228,11 @@ st.write("""Here we test 4 different regressor algorithms namely:
 # ]
 # model_train=list(map(compare_models,models)) 
 
-# print(*model_train, sep="\n") 
+# print(*model_train, sep="\n") The evaluation metric is set based on R^2 (coefficient of determination) regression score function, that will represents the proportion of the variance for items (crops) in the regression model. R^2 score shows how well terms (data points) fit a curve or line.
+
+st.write("""R ^ 2 is a statistical measure between 0 and 1 which calculates how similar a regression line is to the data it's fitted to. If it's a 1, the model 100 % predicts the data variance if it's a 0, the model predicts none of the variance.""")
+
+st.write("")
 
 st.subheader("Testing of the model on test dataset on kaggle notebook")
 
@@ -240,28 +252,10 @@ Therefore, from the above output, we can see that the Decision Tree Regressor is
 
 
 
-#minor fitting in the dataframe
-
-yield_df_onehot = yield_df_onehot.drop(['Year'], axis=1)
-
-
 test_df=pd.DataFrame(test_data,columns=yield_df_onehot.loc[:, yield_df_onehot.columns != 'hg/ha_yield'].columns) 
 
-cntry=test_df[[col for col in test_df.columns if 'Country' in col]].stack()[test_df[[col for col in test_df.columns if 'Country' in col]].stack()>0]
-cntrylist=list(pd.DataFrame(cntry).index.get_level_values(1))
-countries=[i.split("_")[1] for i in cntrylist]
-itm=test_df[[col for col in test_df.columns if 'Item' in col]].stack()[test_df[[col for col in test_df.columns if 'Item' in col]].stack()>0]
-itmlist=list(pd.DataFrame(itm).index.get_level_values(1))
-items=[i.split("_")[1] for i in itmlist]
 
-st.write(test_df.head())
-
-test_df.drop([col for col in test_df.columns if 'Item' in col],axis=1,inplace=True)
-test_df.drop([col for col in test_df.columns if 'Country' in col],axis=1,inplace=True)
-st.write(test_df.head())
-
-test_df['Country'] = countries
-test_df['Item'] = items
+st.write("The final dataset is ready to be used for the model. The final dataset contains the following columns:")
 st.write(test_df.head())
 
 
@@ -270,13 +264,13 @@ st.write(test_df.head())
 st.header("Prediction")
 st.write("""As seen above, the best regressor is Decision Tree Regressor. So, we will use this regressor to predict the yield of the crops.
 
-Using the same, the plot is made here using MatPlotLib showing the relation between the predicted and the actual score.""")
+Using the same, the plot is made here using MatPlotLib showing the relation between the predicted and the actual yield.""")
+st.success("The model predicts the results with an accuracy of  96.051%")
 clf = DecisionTreeRegressor()
 model = clf.fit(train_data, train_labels)
 
 test_df["yield_predicted"] = model.predict(test_data)
 test_df["yield_actual"] = pd.DataFrame(test_labels)["hg/ha_yield"].tolist()
-test_group = test_df.groupby("Item")
 
 fig, ax = plt.subplots()
 
@@ -289,3 +283,25 @@ plt.show()
 st.write(fig)
 
 
+st.header("Prediction on Custom Inputs")
+
+
+def getUserInput():
+    #Area,Item,Year,hg/ha_yield,average_rain_fall_mm_per_year,pesticides_tonnes,avg_temp
+    area_ip=st.sidebar.text_input("Enter The name of the Country","India")
+    item_ip = st.sidebar.text_input("Enter The name of the Crop", "Potatoes")
+    rainfall_ip=st.sidebar.slider('Rainfall',55,3200,1100)
+    pesticides_ip=st.sidebar.slider('Pesticides',0,1807000,20000)
+    avg_temp_ip=st.sidebar.slider('Temprature',-14,45,16)
+
+    userData=np.array([[area_ip,item_ip,rainfall_ip,pesticides_ip,avg_temp_ip]])
+    return userData
+
+inputs=getUserInput()
+inputs=np.array(ct1.transform(inputs))
+inputs[:,10]=le.transform(inputs[:,10])
+inputs=scaler.transform(inputs)
+prediction = model.predict(inputs)
+
+predic_y = "Predicted hg/ha_yield is: " + str(prediction[0])
+st.success(predic_y)
