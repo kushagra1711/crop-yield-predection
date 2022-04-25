@@ -1,5 +1,3 @@
 # crop-yield-predection
 
-use 
-
-''' streamlit webapp.py '''
+use `streamlit webapp.py`
