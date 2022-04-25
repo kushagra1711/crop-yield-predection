@@ -75,6 +75,7 @@ yield_df = pd.merge(df_yield, df_rain, on=['Year','Area'])
 
 #get the data
 
+
 df_pes = pd.read_csv('pesticides.csv')
 df_pes = df_pes.rename(index=str, columns={"Value": "pesticides_tonnes"})
 df_pes = df_pes.drop(['Element','Domain','Unit','Item'], axis=1)
@@ -285,11 +286,26 @@ st.write(fig)
 
 st.header("Prediction on Custom Inputs")
 
+data = pd.read_csv("yield_df.csv")
+data.columns = ["","Area","Item","Year","hg/ha_yield","average_rain_fall_mm_per_year","pesticides_tonnes","avg_temp"]
+rawlist = list(data.Area)
+rawlist2 = list(data.Item)
+#get unique elements
+area_list = []
+item_list = []
+for x in rawlist2:
+    if x not in item_list:
+        item_list.append(x)
+for x in rawlist:
+    if x not in area_list:
+        area_list.append(x)
+
 
 def getUserInput():
+    
     #Area,Item,Year,hg/ha_yield,average_rain_fall_mm_per_year,pesticides_tonnes,avg_temp
-    area_ip=st.sidebar.text_input("Enter The name of the Country","India")
-    item_ip = st.sidebar.text_input("Enter The name of the Crop", "Potatoes")
+    area_ip=st.sidebar.selectbox("Enter The name of the Country",area_list)
+    item_ip = st.sidebar.selectbox("Enter The name of the Crop", item_list)    
     rainfall_ip=st.sidebar.slider('Rainfall',55,3200,1100)
     pesticides_ip=st.sidebar.slider('Pesticides',0,1807000,20000)
     avg_temp_ip=st.sidebar.slider('Temprature',-14,45,16)
