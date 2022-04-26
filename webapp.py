@@ -19,9 +19,8 @@ from sklearn import svm
 from sklearn.tree import DecisionTreeRegressor
 
 
-
 #command to execute the code
-# streamlit run C:\Users\Kushagra\Desktop\jpmc\webapp.py
+# streamlit run webapp.py
 
 
 st.header("""CROP YIELD PREDICTION""");
@@ -43,8 +42,7 @@ st.dataframe(df_yield)
 #showing the dataset of the data
 st.write(df_yield.describe())
 
-st.write(df_yield.info())
-
+# st.write(df_yield.info())
 
 
 ###rainfall data
@@ -64,7 +62,7 @@ st.dataframe(df_rain)
 #showing the dataset of the data
 st.write(df_rain.describe())
 
-st.write(df_rain.info())
+# st.write(df_rain.info())
 
 
 #merging the two dataframes
@@ -90,7 +88,7 @@ st.dataframe(df_pes)
 #showing the dataset of the data
 st.write(df_pes.describe())
 
-st.write(df_pes.info())
+# st.write(df_pes.info())
 
 #merging the two dataframes
 yield_df = pd.merge(yield_df, df_pes, on=['Year','Area'])
@@ -132,13 +130,11 @@ st.subheader("Information regarfing the dataframe:")
 #showing the dataset of the data
 st.write(yield_df.describe())
 
-st.write(yield_df.info())
+# st.write(yield_df.info())
 
 
 
 ###Time for data exploration, finding whether there's any correlation between the variables
-
-
 
 correlation_data=yield_df.select_dtypes(include=[np.number]).corr()
 
@@ -243,8 +239,6 @@ st.write("""The output below shows the accuracy of the model, the accuracy is th
 ['GradientBoostingRegressor', 0.8959545600619471]
 
 ['RandomForestRegressor', 0.6807690552605921]
-
-['SVR', -0.19466686625412555]
 
 ['DecisionTreeRegressor', 0.9605155680634376]
 
