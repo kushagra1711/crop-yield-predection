@@ -1,3 +1,7 @@
 # crop-yield-predection
 
-use `streamlit webapp.py`
+install streamlit from mcd
+
+`pip install streamlit`
+
+use `streamlit run webapp.py`
